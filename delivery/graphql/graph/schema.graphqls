@@ -1,0 +1,23 @@
+# GraphQL schema example
+#
+# https://gqlgen.com/getting-started/
+
+type User {
+  id: ID!
+  name: String!
+}
+
+input PaginationInput {
+  limit: Int!
+  page: Int!
+}
+
+input UsersCriteriaInput {
+  name: String
+  email: String
+}
+
+type Query {
+  users(pagination: PaginationInput, criteria: UsersCriteriaInput): [User!]!
+  user(id: Int!): User
+}
