@@ -2,15 +2,25 @@ package storage
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 
 	sq "github.com/Masterminds/squirrel"
+	_ "github.com/lib/pq"
 	"github.com/stdapps/graphql-example/ticketing"
 )
 
 type PostgresStorage struct {
 	db *sql.DB
 	b  sq.StatementBuilderType
+}
+
+func OpenPostgresDB(connstr string) *sql.DB {
+	db, err := sql.Open("postgres", connstr)
+	if err != nil {
+		panic(err)
+	}
+	return db
 }
 
 func NewPostgresStorage(db *sql.DB) PostgresStorage {
@@ -20,21 +30,28 @@ func NewPostgresStorage(db *sql.DB) PostgresStorage {
 	}
 }
 
-// GetUsers ...
+// GetUsers search for users by their name with pagination
 func (s PostgresStorage) GetUsers(p ticketing.Pagination, criteria ticketing.UsersSearchCriteria) ([]ticketing.User, error) {
+	// treat page=0 as page=1
+	if p.Page == 0 {
+		p.Page = 1
+	}
 	offset := p.Limit * (p.Page - 1)
 	query := s.b.Select("id", "name").From("users").
 		Limit(uint64(p.Limit)).
 		Offset(uint64(offset))
 
 	if criteria.Name != "" {
-		query = query.Where(sq.Like{"name": criteria.Name})
+		query = query.Where(sq.Like{"name": fmt.Sprintf("%%%s%%", criteria.Name)})
 	}
 	sql, args, err := query.ToSql()
 	if err != nil {
 		return nil, err
 	}
-	rows, err := s.db.Query(sql, args)
+	rows, err := s.db.Query(sql, args...)
+	if err != nil {
+		return nil, err
+	}
 	defer rows.Close()
 
 	users := []ticketing.User{}
@@ -48,14 +65,11 @@ func (s PostgresStorage) GetUsers(p ticketing.Pagination, criteria ticketing.Use
 	return users, nil
 }
 
-// FindUser ...
+// FindUser finds user by its ID
 func (s PostgresStorage) FindUser(id int) (user ticketing.User, err error) {
 	query := s.b.Select("id", "name").From("users").Where(sq.Eq{"id": id})
 
 	sql, args, err := query.ToSql()
-	if err != nil {
-		return user, err
-	}
 	if err != nil {
 		return user, err
 	}
@@ -66,7 +80,7 @@ func (s PostgresStorage) FindUser(id int) (user ticketing.User, err error) {
 	return user, err
 }
 
-// CreateUser ...
+// CreateUser persist a user to postgres database
 func (s PostgresStorage) CreateUser(user ticketing.User) (ticketing.User, error) {
 	query := s.b.Insert("users").
 		Columns("name").
@@ -74,10 +88,6 @@ func (s PostgresStorage) CreateUser(user ticketing.User) (ticketing.User, error)
 		Suffix("returning id")
 
 	sql, args, err := query.ToSql()
-	log.Printf(sql, args...)
-	if err != nil {
-		return user, err
-	}
 	if err != nil {
 		return user, err
 	}
