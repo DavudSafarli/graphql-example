@@ -8,3 +8,6 @@ local-test-env-down:
 local-test:
 	make local-test-env-up
 	go test ./... -p=1 --cover
+
+gqlgen:
+	cd delivery/graphql/ &&  gqlgen generate

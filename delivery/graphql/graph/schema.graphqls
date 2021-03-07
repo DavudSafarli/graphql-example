@@ -8,8 +8,8 @@ type User {
 }
 
 input PaginationInput {
-  limit: Int!
-  page: Int!
+  limit: Int
+  page: Int
 }
 
 input UsersCriteriaInput {
