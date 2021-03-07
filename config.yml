@@ -1,0 +1,7 @@
+# Server configurations
+server:
+  port: 8080
+
+# Database credentials
+database:
+  url: "postgres://gqluser:gqlpass@localhost:5433/gqltest?sslmode=disable"
