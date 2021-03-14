@@ -6,6 +6,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
+	"github.com/stdapps/graphql-example/delivery/graphql/dataloader"
 	"github.com/stdapps/graphql-example/delivery/graphql/graph/generated"
 	"github.com/stdapps/graphql-example/delivery/graphql/graph/resolvers"
 	"github.com/stdapps/graphql-example/storage"
@@ -16,10 +17,11 @@ func StartGraphqlServer(port string, db storage.PostgresStorage) {
 	resolver := &resolvers.Resolver{
 		Storage: db,
 	}
+	dloader := dataloader.NewDataLoader(db)
 	srv := handler.NewDefaultServer(generated.NewExecutableSchema(generated.Config{Resolvers: resolver}))
 
 	http.Handle("/", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", srv)
+	http.Handle("/query", dloader.LoaderMiddleware(srv))
 
 	log.Printf("connect to http://localhost:%s/ for GraphQL playground", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

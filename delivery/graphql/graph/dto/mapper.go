@@ -37,6 +37,15 @@ func MapUser(u ticketing.User) User {
 	}
 }
 
+// MapUser maps ticketing.User (domain model) to dto.User
+func MapUsers(users []ticketing.User) []User {
+	res := []User{}
+	for _, v := range users {
+		res = append(res, MapUser(v))
+	}
+	return res
+}
+
 // MapTicket maps ticketing.Ticket (domain model) to dto.Ticket
 func MapTicket(u ticketing.Ticket) Ticket {
 	return Ticket{

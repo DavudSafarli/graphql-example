@@ -203,3 +203,36 @@ func (s PostgresStorage) GetTicketAssignees(ticketID int) ([]ticketing.User, err
 	}
 	return users, nil
 }
+
+// GetTicketsAssignees search for users by their name with pagination
+func (s PostgresStorage) GetTicketsAssignees(ticketsIDs []int) (map[int][]ticketing.User, error) {
+	query := s.b.Select("users.id", "users.name", "assigns.ticket_id").
+		From("users").
+		Join("assigns ON users.id = assigns.user_id").
+		Where(sq.Eq{"assigns.ticket_id": ticketsIDs})
+
+	sql, args, err := query.ToSql()
+	printSql(sql, args)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := s.db.Query(sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	users := make(map[int][]ticketing.User)
+	ticketId := 0
+	for rows.Next() {
+		user := ticketing.User{}
+		if err := rows.Scan(&user.ID, &user.Name, &ticketId); err != nil {
+			return nil, err
+		}
+		if _, ok := users[ticketId]; !ok {
+			users[ticketId] = []ticketing.User{}
+		}
+		users[ticketId] = append(users[ticketId], user)
+	}
+	return users, nil
+}

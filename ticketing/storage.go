@@ -6,6 +6,7 @@ type Storage interface {
 	FindUser(id int) (User, error)
 	CreateUser(user User) (User, error)
 
+	GetTicketsAssignees(id []int) (map[int][]User, error)
 	GetTicketAssignees(id int) ([]User, error)
 
 	GetTickets(p Pagination) ([]Ticket, error)
