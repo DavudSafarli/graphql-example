@@ -36,3 +36,11 @@ func MapUser(u ticketing.User) User {
 		Name: u.Name,
 	}
 }
+
+// MapTicket maps ticketing.Ticket (domain model) to dto.Ticket
+func MapTicket(u ticketing.Ticket) Ticket {
+	return Ticket{
+		ID:    u.ID,
+		Title: u.Title,
+	}
+}

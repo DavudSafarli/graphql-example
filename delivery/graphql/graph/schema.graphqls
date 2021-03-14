@@ -7,6 +7,12 @@ type User {
   name: String!
 }
 
+type Ticket {
+  id: ID!
+  title: String!
+  assignees: [User!]
+}
+
 input PaginationInput {
   limit: Int
   page: Int
@@ -20,4 +26,6 @@ input UsersCriteriaInput {
 type Query {
   users(pagination: PaginationInput, criteria: UsersCriteriaInput): [User!]!
   user(id: Int!): User
+
+  tickets(pagination: PaginationInput): [Ticket!]!
 }

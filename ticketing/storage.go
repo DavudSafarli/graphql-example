@@ -5,6 +5,12 @@ type Storage interface {
 	GetUsers(p Pagination, criteria UsersSearchCriteria) ([]User, error)
 	FindUser(id int) (User, error)
 	CreateUser(user User) (User, error)
+
+	GetTicketAssignees(id int) ([]User, error)
+
+	GetTickets(p Pagination) ([]Ticket, error)
+	CreateTicket(ticket Ticket) (Ticket, error)
+	FindTicket(id int) (Ticket, error)
 }
 
 type Pagination struct {

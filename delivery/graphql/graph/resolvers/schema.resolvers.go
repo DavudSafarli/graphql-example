@@ -34,7 +34,36 @@ func (r *queryResolver) User(ctx context.Context, id int) (*dto.User, error) {
 	return &response, err
 }
 
+func (r *queryResolver) Tickets(ctx context.Context, pagination *dto.PaginationInput) ([]dto.Ticket, error) {
+	p := dto.MapToTicketingPagination(pagination)
+	tickets, err := r.Storage.GetTickets(p)
+	if err != nil {
+		return nil, err
+	}
+	response := make([]dto.Ticket, 0, len(tickets))
+	for _, t := range tickets {
+		response = append(response, dto.MapTicket(t))
+	}
+	return response, err
+}
+
+func (r *ticketResolver) Assignees(ctx context.Context, obj *dto.Ticket) ([]dto.User, error) {
+	users, err := r.Storage.GetTicketAssignees(obj.ID)
+	if err != nil {
+		return nil, err
+	}
+	response := make([]dto.User, 0, len(users))
+	for _, u := range users {
+		response = append(response, dto.MapUser(u))
+	}
+	return response, nil
+}
+
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
+// Ticket returns generated.TicketResolver implementation.
+func (r *Resolver) Ticket() generated.TicketResolver { return &ticketResolver{r} }
+
 type queryResolver struct{ *Resolver }
+type ticketResolver struct{ *Resolver }
