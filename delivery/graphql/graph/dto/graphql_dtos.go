@@ -7,11 +7,6 @@ type PaginationInput struct {
 	Page  *int `json:"page"`
 }
 
-type User struct {
-	ID   int    `json:"id"`
-	Name string `json:"name"`
-}
-
 type UsersCriteriaInput struct {
 	Name  *string `json:"name"`
 	Email *string `json:"email"`

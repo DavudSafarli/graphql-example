@@ -44,14 +44,21 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Query struct {
+		Tags    func(childComplexity int) int
 		Tickets func(childComplexity int, pagination *dto.PaginationInput) int
 		User    func(childComplexity int, id int) int
 		Users   func(childComplexity int, pagination *dto.PaginationInput, criteria *dto.UsersCriteriaInput) int
 	}
 
+	Tag struct {
+		ID   func(childComplexity int) int
+		Name func(childComplexity int) int
+	}
+
 	Ticket struct {
 		Assignees func(childComplexity int) int
 		ID        func(childComplexity int) int
+		Tags      func(childComplexity int) int
 		Title     func(childComplexity int) int
 	}
 
@@ -65,9 +72,11 @@ type QueryResolver interface {
 	Users(ctx context.Context, pagination *dto.PaginationInput, criteria *dto.UsersCriteriaInput) ([]dto.User, error)
 	User(ctx context.Context, id int) (*dto.User, error)
 	Tickets(ctx context.Context, pagination *dto.PaginationInput) ([]dto.Ticket, error)
+	Tags(ctx context.Context) ([]dto.Tag, error)
 }
 type TicketResolver interface {
 	Assignees(ctx context.Context, obj *dto.Ticket) ([]dto.User, error)
+	Tags(ctx context.Context, obj *dto.Ticket) ([]dto.Tag, error)
 }
 
 type executableSchema struct {
@@ -84,6 +93,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Query.tags":
+		if e.complexity.Query.Tags == nil {
+			break
+		}
+
+		return e.complexity.Query.Tags(childComplexity), true
 
 	case "Query.tickets":
 		if e.complexity.Query.Tickets == nil {
@@ -121,6 +137,20 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Query.Users(childComplexity, args["pagination"].(*dto.PaginationInput), args["criteria"].(*dto.UsersCriteriaInput)), true
 
+	case "Tag.id":
+		if e.complexity.Tag.ID == nil {
+			break
+		}
+
+		return e.complexity.Tag.ID(childComplexity), true
+
+	case "Tag.name":
+		if e.complexity.Tag.Name == nil {
+			break
+		}
+
+		return e.complexity.Tag.Name(childComplexity), true
+
 	case "Ticket.assignees":
 		if e.complexity.Ticket.Assignees == nil {
 			break
@@ -134,6 +164,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Ticket.ID(childComplexity), true
+
+	case "Ticket.tags":
+		if e.complexity.Ticket.Tags == nil {
+			break
+		}
+
+		return e.complexity.Ticket.Tags(childComplexity), true
 
 	case "Ticket.title":
 		if e.complexity.Ticket.Title == nil {
@@ -215,10 +252,16 @@ type User {
   name: String!
 }
 
+type Tag {
+  id: ID!
+  name: String!
+}
+
 type Ticket {
   id: ID!
   title: String!
   assignees: [User!]
+  tags: [Tag!]
 }
 
 input PaginationInput {
@@ -236,8 +279,9 @@ type Query {
   user(id: Int!): User
 
   tickets(pagination: PaginationInput): [Ticket!]!
-}
-`, BuiltIn: false},
+  
+  tags: [Tag!]!
+}`, BuiltIn: false},
 }
 var parsedSchema = gqlparser.MustLoadSchema(sources...)
 
@@ -475,6 +519,41 @@ func (ec *executionContext) _Query_tickets(ctx context.Context, field graphql.Co
 	return ec.marshalNTicket2ᚕgithubᚗcomᚋstdappsᚋgraphqlᚑexampleᚋdeliveryᚋgraphqlᚋgraphᚋdtoᚐTicketᚄ(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Query_tags(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Tags(rctx)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]dto.Tag)
+	fc.Result = res
+	return ec.marshalNTag2ᚕgithubᚗcomᚋstdappsᚋgraphqlᚑexampleᚋdeliveryᚋgraphqlᚋgraphᚋdtoᚐTagᚄ(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -544,6 +623,76 @@ func (ec *executionContext) _Query___schema(ctx context.Context, field graphql.C
 	res := resTmp.(*introspection.Schema)
 	fc.Result = res
 	return ec.marshalO__Schema2ᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐSchema(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Tag_id(ctx context.Context, field graphql.CollectedField, obj *dto.Tag) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Tag",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int)
+	fc.Result = res
+	return ec.marshalNID2int(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Tag_name(ctx context.Context, field graphql.CollectedField, obj *dto.Tag) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Tag",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Name, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Ticket_id(ctx context.Context, field graphql.CollectedField, obj *dto.Ticket) (ret graphql.Marshaler) {
@@ -646,6 +795,38 @@ func (ec *executionContext) _Ticket_assignees(ctx context.Context, field graphql
 	res := resTmp.([]dto.User)
 	fc.Result = res
 	return ec.marshalOUser2ᚕgithubᚗcomᚋstdappsᚋgraphqlᚑexampleᚋdeliveryᚋgraphqlᚋgraphᚋdtoᚐUserᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Ticket_tags(ctx context.Context, field graphql.CollectedField, obj *dto.Ticket) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Ticket",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Ticket().Tags(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]dto.Tag)
+	fc.Result = res
+	return ec.marshalOTag2ᚕgithubᚗcomᚋstdappsᚋgraphqlᚑexampleᚋdeliveryᚋgraphqlᚋgraphᚋdtoᚐTagᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _User_id(ctx context.Context, field graphql.CollectedField, obj *dto.User) (ret graphql.Marshaler) {
@@ -1923,10 +2104,56 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 				}
 				return res
 			})
+		case "tags":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_tags(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
 		case "__type":
 			out.Values[i] = ec._Query___type(ctx, field)
 		case "__schema":
 			out.Values[i] = ec._Query___schema(ctx, field)
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var tagImplementors = []string{"Tag"}
+
+func (ec *executionContext) _Tag(ctx context.Context, sel ast.SelectionSet, obj *dto.Tag) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, tagImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Tag")
+		case "id":
+			out.Values[i] = ec._Tag_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "name":
+			out.Values[i] = ec._Tag_name(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -1968,6 +2195,17 @@ func (ec *executionContext) _Ticket(ctx context.Context, sel ast.SelectionSet, o
 					}
 				}()
 				res = ec._Ticket_assignees(ctx, field, obj)
+				return res
+			})
+		case "tags":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Ticket_tags(ctx, field, obj)
 				return res
 			})
 		default:
@@ -2316,6 +2554,47 @@ func (ec *executionContext) marshalNString2string(ctx context.Context, sel ast.S
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNTag2githubᚗcomᚋstdappsᚋgraphqlᚑexampleᚋdeliveryᚋgraphqlᚋgraphᚋdtoᚐTag(ctx context.Context, sel ast.SelectionSet, v dto.Tag) graphql.Marshaler {
+	return ec._Tag(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNTag2ᚕgithubᚗcomᚋstdappsᚋgraphqlᚑexampleᚋdeliveryᚋgraphqlᚋgraphᚋdtoᚐTagᚄ(ctx context.Context, sel ast.SelectionSet, v []dto.Tag) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTag2githubᚗcomᚋstdappsᚋgraphqlᚑexampleᚋdeliveryᚋgraphqlᚋgraphᚋdtoᚐTag(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
 }
 
 func (ec *executionContext) marshalNTicket2githubᚗcomᚋstdappsᚋgraphqlᚑexampleᚋdeliveryᚋgraphqlᚋgraphᚋdtoᚐTicket(ctx context.Context, sel ast.SelectionSet, v dto.Ticket) graphql.Marshaler {
@@ -2698,6 +2977,46 @@ func (ec *executionContext) marshalOString2ᚖstring(ctx context.Context, sel as
 		return graphql.Null
 	}
 	return graphql.MarshalString(*v)
+}
+
+func (ec *executionContext) marshalOTag2ᚕgithubᚗcomᚋstdappsᚋgraphqlᚑexampleᚋdeliveryᚋgraphqlᚋgraphᚋdtoᚐTagᚄ(ctx context.Context, sel ast.SelectionSet, v []dto.Tag) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNTag2githubᚗcomᚋstdappsᚋgraphqlᚑexampleᚋdeliveryᚋgraphqlᚋgraphᚋdtoᚐTag(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+	return ret
 }
 
 func (ec *executionContext) marshalOUser2ᚕgithubᚗcomᚋstdappsᚋgraphqlᚑexampleᚋdeliveryᚋgraphqlᚋgraphᚋdtoᚐUserᚄ(ctx context.Context, sel ast.SelectionSet, v []dto.User) graphql.Marshaler {

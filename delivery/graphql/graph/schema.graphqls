@@ -7,10 +7,16 @@ type User {
   name: String!
 }
 
+type Tag {
+  id: ID!
+  name: String!
+}
+
 type Ticket {
   id: ID!
   title: String!
   assignees: [User!]
+  tags: [Tag!]
 }
 
 input PaginationInput {
@@ -26,6 +32,8 @@ input UsersCriteriaInput {
 type Query {
   users(pagination: PaginationInput, criteria: UsersCriteriaInput): [User!]!
   user(id: Int!): User
+
+  tags: [Tag!]!
 
   tickets(pagination: PaginationInput): [Ticket!]!
 }
