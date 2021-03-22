@@ -53,3 +53,20 @@ func MapTicket(u ticketing.Ticket) Ticket {
 		Title: u.Title,
 	}
 }
+
+// MapTag maps ticketing.Tag (domain model) to dto.Tag
+func MapTag(t ticketing.Tag) Tag {
+	return Tag{
+		ID:   t.ID,
+		Name: t.Name,
+	}
+}
+
+// MapTags maps ticketing.Tag (domain model) to dto.Tag
+func MapTags(tags []ticketing.Tag) []Tag {
+	res := []Tag{}
+	for _, v := range tags {
+		res = append(res, MapTag(v))
+	}
+	return res
+}

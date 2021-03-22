@@ -12,6 +12,9 @@ type Storage interface {
 	GetTickets(p Pagination) ([]Ticket, error)
 	CreateTicket(ticket Ticket) (Ticket, error)
 	FindTicket(id int) (Ticket, error)
+
+	GetTags() ([]Tag, error)
+	GetTicketsTags(id []int) (map[int][]Tag, error)
 }
 
 type Pagination struct {

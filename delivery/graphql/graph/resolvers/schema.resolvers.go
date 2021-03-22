@@ -5,7 +5,6 @@ package resolvers
 
 import (
 	"context"
-	"time"
 
 	"github.com/stdapps/graphql-example/delivery/graphql/dataloader"
 	"github.com/stdapps/graphql-example/delivery/graphql/graph/dto"
@@ -49,9 +48,24 @@ func (r *queryResolver) Tickets(ctx context.Context, pagination *dto.PaginationI
 	return response, err
 }
 
+func (r *queryResolver) Tags(ctx context.Context) ([]dto.Tag, error) {
+	tags, err := r.Storage.GetTags()
+	if err != nil {
+		return nil, err
+	}
+	response := make([]dto.Tag, 0, len(tags))
+	for _, t := range tags {
+		response = append(response, dto.MapTag(t))
+	}
+	return response, err
+}
+
 func (r *ticketResolver) Assignees(ctx context.Context, obj *dto.Ticket) ([]dto.User, error) {
-	time.Sleep(time.Microsecond * 100)
 	return dataloader.For(ctx).AssigneesLoder.Load(obj.ID)
+}
+
+func (r *ticketResolver) Tags(ctx context.Context, obj *dto.Ticket) ([]dto.Tag, error) {
+	return dataloader.For(ctx).TagsLoader.Load(obj.ID)
 }
 
 // Query returns generated.QueryResolver implementation.

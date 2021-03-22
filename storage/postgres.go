@@ -236,3 +236,62 @@ func (s PostgresStorage) GetTicketsAssignees(ticketsIDs []int) (map[int][]ticket
 	}
 	return users, nil
 }
+
+func (s PostgresStorage) GetTags() ([]ticketing.Tag, error) {
+	query := s.b.Select("id", "name").From("tags")
+
+	sql, args, err := query.ToSql()
+	printSql(sql, args)
+	if err != nil {
+
+		return nil, err
+	}
+	rows, err := s.db.Query(sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tags := []ticketing.Tag{}
+	for rows.Next() {
+		tag := ticketing.Tag{}
+		if err := rows.Scan(&tag.ID, &tag.Name); err != nil {
+			log.Fatal(err)
+		}
+		tags = append(tags, tag)
+	}
+	return tags, nil
+}
+
+// GetTicketsTags search for users by their name with pagination
+func (s PostgresStorage) GetTicketsTags(ticketsIDs []int) (map[int][]ticketing.Tag, error) {
+	query := s.b.Select("tags.id", "tags.name", "tags_tickets.ticket_id").
+		From("tags").
+		Join("tags_tickets ON tags.id = tags_tickets.tag_id").
+		Where(sq.Eq{"tags_tickets.ticket_id": ticketsIDs})
+
+	sql, args, err := query.ToSql()
+	printSql(sql, args)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := s.db.Query(sql, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	tags := make(map[int][]ticketing.Tag)
+	ticketId := 0
+	for rows.Next() {
+		tag := ticketing.Tag{}
+		if err := rows.Scan(&tag.ID, &tag.Name, &ticketId); err != nil {
+			return nil, err
+		}
+		if _, ok := tags[ticketId]; !ok {
+			tags[ticketId] = []ticketing.Tag{}
+		}
+		tags[ticketId] = append(tags[ticketId], tag)
+	}
+	return tags, nil
+}
